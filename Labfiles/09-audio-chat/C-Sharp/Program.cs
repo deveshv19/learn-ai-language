@@ -1,11 +1,14 @@
-﻿using System;
+using System;
 using Azure;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
-// Add references
+ // Add references
+ using Azure.Identity;
+ using Azure.AI.Projects;
+ using Azure.AI.Inference;
 
 
 namespace chat_app
@@ -27,11 +30,19 @@ namespace chat_app
 
 
 
-                // Initialize the project client
+                 // Initialize the project client
+                DefaultAzureCredentialOptions options = new() { 
+                    ExcludeEnvironmentCredential = true,
+                    ExcludeManagedIdentityCredential = true
+                };
+                var projectClient = new AIProjectClient(
+                    new Uri(project_connection),
+                    new DefaultAzureCredential(options));
 
 
 
-                // Get a chat client
+                 // Get a chat client
+                ChatCompletionsClient chat = projectClient.GetChatCompletionsClient();
 
 
 
@@ -60,7 +71,21 @@ namespace chat_app
                         Console.WriteLine("Getting a response ...\n");
 
 
-                        // Get a response to audio input
+                         // Get a response to audio input
+                        string audioUrl = "https://github.com/MicrosoftLearning/mslearn-ai-language/raw/refs/heads/main/Labfiles/09-audio-chat/data/fresas.mp3";
+                        var requestOptions = new ChatCompletionsOptions()
+                        {
+                            Model = model_deployment,
+                            Messages =
+                            {
+                                new ChatRequestSystemMessage(system_message),
+                                new ChatRequestUserMessage(
+                                    new ChatMessageTextContentItem(prompt),
+                                    new ChatMessageAudioContentItem(new Uri(audioUrl))),
+                            }
+                        };
+                        var response = chat.Complete(requestOptions);
+                        Console.WriteLine(response.Value.Content);
                         
 
                     }
